@@ -1,0 +1,99 @@
+import streamlit as st
+import ollama
+
+# -----------------------------
+# Page Configuration
+# -----------------------------
+st.set_page_config(
+    page_title="Mahaa CodeBot",
+    layout="centered"
+)
+
+# -----------------------------
+# Custom CSS Styling
+# -----------------------------
+st.markdown("""
+<style>
+body {
+    background-color: #e6f2ff;
+}
+
+.user-box {
+    background-color: #f0f0f0;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.bot-box {
+    background-color: #ffffff;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #4da6ff;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.title("🤖 Mahaa Programming CodeBot")
+
+# -----------------------------
+# Session State (IMPORTANT FIX)
+# -----------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a senior programming assistant. "
+                "Return ONLY programming code. "
+                "No explanations outside code. "
+                "Use comments if necessary."
+            )
+        }
+    ]
+
+# -----------------------------
+# Display Chat History (STRUCTURED)
+# -----------------------------
+for msg in st.session_state.messages[1:]:
+    if msg["role"] == "user":
+        st.markdown(
+            f"<div class='user-box'><b>You:</b> {msg['content']}</div>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            "<div class='bot-box'><b>AI Code Output:</b></div>",
+            unsafe_allow_html=True
+        )
+        st.code(msg["content"], language="python")
+
+# -----------------------------
+# User Input
+# -----------------------------
+user_input = st.text_input("Ask a programming question:")
+
+if user_input:
+    # Append user message ONCE
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_input
+    })
+
+    # AI Response (SINGLE CALL)
+    response = ollama.chat(
+        model="hf.co/MaziyarPanahi/codegemma-2b-GGUF:Q4_K_M",
+        messages=st.session_state.messages
+    )
+
+    reply = response["message"]["content"]
+
+    # Append AI response ONCE
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": reply
+    })
+
+    # Force clean rerender (prevents duplicates)
+    st.rerun()
